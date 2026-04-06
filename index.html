@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maze Escape Planner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="app-shell">
+    <section class="card">
+      <h1>Maze Escape Planner</h1>
+      <p class="subtitle">Use DFS/backtracking in Java to find a route from start to end.</p>
+
+      <div class="grid two-col">
+        <div>
+          <label for="mazeInput">Maze Input (0 = open, 1 = wall)</label>
+          <textarea id="mazeInput" rows="8" readonly>
+0 0 1 0
+1 0 1 0
+1 0 0 0
+1 1 1 0
+          </textarea>
+        </div>
+
+        <div class="inputs-col">
+          <div class="row">
+            <label>Start</label>
+            <div class="chip">(0, 0)</div>
+          </div>
+          <div class="row">
+            <label>End</label>
+            <div class="chip">(3, 3)</div>
+          </div>
+          <div class="row">
+            <label>Status</label>
+            <div class="chip success">Path Found</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><i class="dot open"></i> Open Cell</span>
+        <span><i class="dot wall"></i> Wall</span>
+        <span><i class="dot path"></i> Path</span>
+      </div>
+
+      <div class="result-box">
+        <h2>Expected Output</h2>
+        <p>Path: (0,0) → (0,1) → (1,1) → (2,1) → (2,2) → (2,3) → (3,3)</p>
+        <p class="no-path">If no valid route exists, show: <strong>No path found</strong>.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
