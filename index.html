@@ -13,47 +13,296 @@
   <main class="app-shell">
     <section class="card">
       <h1>Maze Escape Planner</h1>
-      <p class="subtitle">Use DFS/backtracking in Java to find a route from start to end.</p>
+      <p class="subtitle">Create the maze, set start and end, then find the path directly in the browser.</p>
+
+      <div class="controls">
+        <div class="control-group">
+          <label for="rows">Rows</label>
+          <input id="rows" type="number" min="2" max="20" value="6">
+        </div>
+
+        <div class="control-group">
+          <label for="cols">Columns</label>
+          <input id="cols" type="number" min="2" max="20" value="6">
+        </div>
+
+        <button id="buildBtn" type="button">Create Maze</button>
+      </div>
+
+      <div class="mode-row">
+        <button class="mode-btn active" id="modeWall" data-mode="wall" type="button">Toggle Wall</button>
+        <button class="mode-btn" id="modeStart" data-mode="start" type="button">Set Start</button>
+        <button class="mode-btn" id="modeEnd" data-mode="end" type="button">Set End</button>
+        <button id="clearPathBtn" type="button">Clear Path</button>
+        <button id="resetBtn" type="button">Reset Grid</button>
+      </div>
 
       <div class="grid two-col">
         <div>
-          <label for="mazeInput">Maze Input (0 = open, 1 = wall)</label>
-          <textarea id="mazeInput" rows="8" readonly>
-0 0 1 0
-1 0 1 0
-1 0 0 0
-1 1 1 0
-          </textarea>
+          <label>Maze Grid</label>
+          <div id="mazeGrid" class="maze-grid" aria-label="Maze grid"></div>
         </div>
 
         <div class="inputs-col">
           <div class="row">
             <label>Start</label>
-            <div class="chip">(0, 0)</div>
+            <div class="chip" id="startChip">(0, 0)</div>
           </div>
           <div class="row">
             <label>End</label>
-            <div class="chip">(3, 3)</div>
+            <div class="chip" id="endChip">(5, 5)</div>
           </div>
           <div class="row">
             <label>Status</label>
-            <div class="chip success">Path Found</div>
+            <div class="chip" id="statusChip">Ready</div>
           </div>
+          <button id="solveBtn" type="button" class="solve-btn">Find Path</button>
         </div>
       </div>
 
       <div class="legend">
-        <span><i class="dot open"></i> Open Cell</span>
+        <span><i class="dot start"></i> Start</span>
+        <span><i class="dot end"></i> End</span>
         <span><i class="dot wall"></i> Wall</span>
         <span><i class="dot path"></i> Path</span>
+        <span><i class="dot open"></i> Open Cell</span>
       </div>
 
       <div class="result-box">
-        <h2>Expected Output</h2>
-        <p>Path: (0,0) → (0,1) → (1,1) → (2,1) → (2,2) → (2,3) → (3,3)</p>
-        <p class="no-path">If no valid route exists, show: <strong>No path found</strong>.</p>
+        <h2>Path Result</h2>
+        <p id="pathOutput">Press Find Path to see the result.</p>
       </div>
     </section>
   </main>
+
+  <script>
+    const rowsInput = document.getElementById("rows");
+    const colsInput = document.getElementById("cols");
+    const buildBtn = document.getElementById("buildBtn");
+    const solveBtn = document.getElementById("solveBtn");
+    const resetBtn = document.getElementById("resetBtn");
+    const clearPathBtn = document.getElementById("clearPathBtn");
+    const mazeGrid = document.getElementById("mazeGrid");
+    const startChip = document.getElementById("startChip");
+    const endChip = document.getElementById("endChip");
+    const statusChip = document.getElementById("statusChip");
+    const pathOutput = document.getElementById("pathOutput");
+    const modeButtons = Array.from(document.querySelectorAll(".mode-btn"));
+
+    let maze = [];
+    let rows = 6;
+    let cols = 6;
+    let mode = "wall";
+    let start = { row: 0, col: 0 };
+    let end = { row: 5, col: 5 };
+
+    const DIRECTIONS = [
+      [1, 0],
+      [0, 1],
+      [-1, 0],
+      [0, -1]
+    ];
+
+    function initMaze() {
+      rows = clamp(Number(rowsInput.value), 2, 20);
+      cols = clamp(Number(colsInput.value), 2, 20);
+      rowsInput.value = rows;
+      colsInput.value = cols;
+
+      maze = Array.from({ length: rows }, () => Array(cols).fill(0));
+      start = { row: 0, col: 0 };
+      end = { row: rows - 1, col: cols - 1 };
+      updateChips();
+      setStatus("Ready", "neutral");
+      pathOutput.textContent = "Press Find Path to see the result.";
+      renderGrid();
+    }
+
+    function renderGrid(path = []) {
+      const pathSet = new Set(path.map(cell => `${cell[0]}-${cell[1]}`));
+      mazeGrid.innerHTML = "";
+      mazeGrid.style.gridTemplateColumns = `repeat(${cols}, minmax(28px, 1fr))`;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "cell";
+          button.dataset.row = String(r);
+          button.dataset.col = String(c);
+
+          if (r === start.row && c === start.col) {
+            button.classList.add("start");
+            button.textContent = "S";
+          } else if (r === end.row && c === end.col) {
+            button.classList.add("end");
+            button.textContent = "E";
+          } else if (maze[r][c] === 1) {
+            button.classList.add("wall");
+          } else {
+            button.classList.add("open");
+          }
+
+          if (pathSet.has(`${r}-${c}`) && !button.classList.contains("start") && !button.classList.contains("end")) {
+            button.classList.add("path");
+          }
+
+          button.addEventListener("click", onCellClick);
+          mazeGrid.appendChild(button);
+        }
+      }
+    }
+
+    function onCellClick(event) {
+      const row = Number(event.currentTarget.dataset.row);
+      const col = Number(event.currentTarget.dataset.col);
+
+      if (mode === "wall") {
+        if ((row === start.row && col === start.col) || (row === end.row && col === end.col)) {
+          return;
+        }
+        maze[row][col] = maze[row][col] === 1 ? 0 : 1;
+      } else if (mode === "start") {
+        if (row === end.row && col === end.col) {
+          return;
+        }
+        if (maze[row][col] === 1) {
+          maze[row][col] = 0;
+        }
+        start = { row, col };
+      } else if (mode === "end") {
+        if (row === start.row && col === start.col) {
+          return;
+        }
+        if (maze[row][col] === 1) {
+          maze[row][col] = 0;
+        }
+        end = { row, col };
+      }
+
+      updateChips();
+      renderGrid();
+    }
+
+    function setMode(nextMode) {
+      mode = nextMode;
+      modeButtons.forEach(btn => {
+        btn.classList.toggle("active", btn.dataset.mode === nextMode);
+      });
+    }
+
+    function solveMaze() {
+      clearPathHighlight();
+      const path = findPath(maze, start.row, start.col, end.row, end.col);
+
+      if (path.length === 0) {
+        setStatus("No Path", "error");
+        pathOutput.innerHTML = "No path found from start to end.";
+        return;
+      }
+
+      renderGrid(path);
+      setStatus("Path Found", "success");
+      pathOutput.innerHTML = path.map(([r, c]) => `(${r}, ${c})`).join(" &rarr; ");
+    }
+
+    function clearPathHighlight() {
+      renderGrid();
+      setStatus("Ready", "neutral");
+      pathOutput.textContent = "Press Find Path to see the result.";
+    }
+
+    function updateChips() {
+      startChip.textContent = `(${start.row}, ${start.col})`;
+      endChip.textContent = `(${end.row}, ${end.col})`;
+    }
+
+    function setStatus(text, type) {
+      statusChip.textContent = text;
+      statusChip.classList.remove("success", "error");
+      if (type === "success") {
+        statusChip.classList.add("success");
+      }
+      if (type === "error") {
+        statusChip.classList.add("error");
+      }
+    }
+
+    function findPath(mazeData, startRow, startCol, endRow, endCol) {
+      const path = [];
+
+      if (!mazeData || mazeData.length === 0 || mazeData[0].length === 0) {
+        return path;
+      }
+
+      const mazeRows = mazeData.length;
+      const mazeCols = mazeData[0].length;
+
+      if (!isInBounds(startRow, startCol, mazeRows, mazeCols)
+          || !isInBounds(endRow, endCol, mazeRows, mazeCols)
+          || mazeData[startRow][startCol] === 1
+          || mazeData[endRow][endCol] === 1) {
+        return path;
+      }
+
+      const visited = Array.from({ length: mazeRows }, () => Array(mazeCols).fill(false));
+      const found = dfs(mazeData, startRow, startCol, endRow, endCol, visited, path);
+
+      if (!found) {
+        return [];
+      }
+
+      return path.reverse();
+    }
+
+    function dfs(mazeData, row, col, endRow, endCol, visited, path) {
+      if (row === endRow && col === endCol) {
+        path.push([row, col]);
+        return true;
+      }
+
+      visited[row][col] = true;
+
+      for (const [dr, dc] of DIRECTIONS) {
+        const nextRow = row + dr;
+        const nextCol = col + dc;
+        if (canMove(mazeData, nextRow, nextCol, visited)) {
+          if (dfs(mazeData, nextRow, nextCol, endRow, endCol, visited, path)) {
+            path.push([row, col]);
+            return true;
+          }
+        }
+      }
+
+      return false;
+    }
+
+    function canMove(mazeData, row, col, visited) {
+      return isInBounds(row, col, mazeData.length, mazeData[0].length)
+        && mazeData[row][col] === 0
+        && !visited[row][col];
+    }
+
+    function isInBounds(row, col, totalRows, totalCols) {
+      return row >= 0 && row < totalRows && col >= 0 && col < totalCols;
+    }
+
+    function clamp(value, min, max) {
+      if (Number.isNaN(value)) {
+        return min;
+      }
+      return Math.min(max, Math.max(min, value));
+    }
+
+    buildBtn.addEventListener("click", initMaze);
+    solveBtn.addEventListener("click", solveMaze);
+    clearPathBtn.addEventListener("click", clearPathHighlight);
+    resetBtn.addEventListener("click", initMaze);
+    modeButtons.forEach(btn => {
+      btn.addEventListener("click", () => setMode(btn.dataset.mode));
+    });
+
+    initMaze();
+  </script>
 </body>
 </html>

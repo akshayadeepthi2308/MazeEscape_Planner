@@ -5,6 +5,8 @@
   --muted: #5c5a57;
   --accent: #1f7a6f;
   --accent-2: #e6a15b;
+  --start: #2b9348;
+  --end: #bc4749;
   --wall: #2f2f2f;
   --open: #7fd1b9;
   --path: #f0b429;
@@ -50,6 +52,66 @@ h1 {
 .subtitle {
   margin-top: 10px;
   color: var(--muted);
+}
+
+.controls {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 170px)) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.control-group label {
+  margin-bottom: 6px;
+}
+
+input[type="number"] {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  font: inherit;
+  background: #fff;
+}
+
+button {
+  border: 1px solid transparent;
+  border-radius: 11px;
+  padding: 10px 12px;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.08);
+}
+
+#buildBtn,
+.solve-btn {
+  background: var(--accent);
+  color: #fff;
+}
+
+#clearPathBtn,
+#resetBtn,
+.mode-btn {
+  background: #fff;
+  border-color: var(--border);
+}
+
+.mode-row {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.mode-btn.active {
+  border-color: #7ebdb3;
+  background: #e6f2ef;
 }
 
 .grid.two-col {
@@ -105,6 +167,52 @@ textarea {
   color: #12574f;
 }
 
+.chip.error {
+  background: #fae7e7;
+  border-color: #efc2c2;
+  color: #7b1f1f;
+}
+
+.maze-grid {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #ffffff;
+}
+
+.cell {
+  min-height: 30px;
+  padding: 0;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.cell.open {
+  background: var(--open);
+}
+
+.cell.wall {
+  background: var(--wall);
+}
+
+.cell.path {
+  background: var(--path);
+}
+
+.cell.start {
+  background: var(--start);
+  color: #fff;
+}
+
+.cell.end {
+  background: var(--end);
+  color: #fff;
+}
+
 .legend {
   margin-top: 20px;
   display: flex;
@@ -124,6 +232,14 @@ textarea {
 
 .dot.open {
   background: var(--open);
+}
+
+.dot.start {
+  background: var(--start);
+}
+
+.dot.end {
+  background: var(--end);
 }
 
 .dot.wall {
@@ -154,6 +270,14 @@ h2 {
 @media (max-width: 760px) {
   .card {
     padding: 20px;
+  }
+
+  .controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #buildBtn {
+    grid-column: 1 / -1;
   }
 
   .grid.two-col {
